@@ -47,10 +47,6 @@ export default class Migi extends Client {
 		return this._modules.keys()
 	}
 
-	get modules() {
-		return this._modules.keys();
-	}
-
 	listen(event, module, key) {
 		const listener = this._call.bind(this, module, key)
 		this._modules.get(module).listeners.push([event, listener])
