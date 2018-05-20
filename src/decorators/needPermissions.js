@@ -6,7 +6,8 @@ export default function needPermissions(permissions, ...args) {
 			const { member, author } = fnargs[0];
 
 			if (member && member.hasPermission(permissions, ...args))
-				return wrapped.apply(this, fnargs); //Pass the args & this value
+				return wrapped.apply(this, fnargs);
+			//Pass the args & this value
 			else {
 				// Todo
 			}
