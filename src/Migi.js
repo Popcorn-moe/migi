@@ -35,7 +35,7 @@ export default class Migi extends Client {
 			commands: []
 		})
 
-		for (const hook of module[hooks]) hook(this, module)
+		if (module[hooks]) for (const hook of module[hooks]) hook(this, module)
 
 		return module
 	}

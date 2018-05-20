@@ -1,6 +1,6 @@
 {
   "name": "@popcorn.moe/migi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Our right hand to write Discord bots",
   "main": "lib",
   "files": [
