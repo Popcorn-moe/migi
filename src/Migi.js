@@ -4,6 +4,7 @@ import mkdirp from 'mkdirp'
 import { join, dirname } from 'path'
 import json5 from 'json5'
 import merge from 'deepmerge'
+import { error } from './errorHandling'
 
 export const hooks = Symbol('hooks')
 
@@ -21,7 +22,12 @@ export default class Migi extends Client {
 			'global',
 			merge(
 				{
-					prefix: '/'
+					prefix: '/',
+					errorFooter: 'Please fix me senpaiiii!',
+					errorEmbedDeleteTimeout: null,
+					errorEmbedColor: 0xdb1348,
+					errorEmbedImages: ['https://i.imgur.com/6EgeVjX.gif'],
+					errorIcon: null
 				},
 				settings
 			)
@@ -55,7 +61,7 @@ export default class Migi extends Client {
 
 	listen(event, module, key) {
 		if (this._modules.has(module)) {
-			const listener = this._call.bind(this, module, key)
+			const listener = this._call.bind(this, module, key, false)
 			this._modules.get(module).listeners.push([event, listener])
 			this.on(event, listener)
 		} else {
@@ -85,7 +91,7 @@ export default class Migi extends Client {
 				.stringify(defaultConfig, {
 					space: '\t'
 				})
-				.split(`\n`)
+				.split('\n')
 				.map((line, i, { length }) => {
 					if (i > 0 && i != length - 1) return `//${line}`
 					else return line
@@ -106,14 +112,35 @@ export default class Migi extends Client {
 					prefix ? content.slice(this.settings.prefix.length) : content
 				)
 
-				if (result) this._call(module, key, message, ...result.slice(1))
+				if (result) this._call(module, key, true, message, ...result.slice(1))
 
 				regex.lastIndex = 0
 			}
 		}
 	}
 
-	_call(module, key, ...args) {
-		module[key](...args)
+	async _call(module, key, command, ...args) {
+		try {
+			await module[key](...args) //catch normal throw and promise rejection
+		} catch (err) {
+			if (command) {
+				const message = args[0]
+				error(
+					message,
+					err,
+					`Error while dispatching command $1 to $2`,
+					message.content,
+					`${module.constructor.name}.${key}`
+				)
+			} else {
+				error(
+					this,
+					err,
+					`Error while dispatching listener $1 to $2`,
+					message.content,
+					`${module.constructor.name}.${key}`
+				)
+			}
+		}
 	}
 }
