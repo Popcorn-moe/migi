@@ -12,14 +12,20 @@ export function initHooks(target) {
 }
 
 export default class Migi extends Client {
-	constructor({ discordjs, root = process.cwd() } = {}) {
+	constructor({ discordjs, root = process.cwd(), settings } = {}) {
 		super(discordjs)
 		this.root = root
 		this._modules = new Map()
 		this.on('message', message => this._onMessage(message))
-		this.settings = this.loadConfig('global', {
-			prefix: '/'
-		})
+		this.settings = this.loadConfig(
+			'global',
+			merge(
+				{
+					prefix: '/'
+				},
+				settings
+			)
+		)
 	}
 
 	loadModule(Module) {
