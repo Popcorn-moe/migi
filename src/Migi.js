@@ -43,6 +43,10 @@ export default class Migi extends Client {
 		this._modules.remove(module);
 	}
 
+	get modules() {
+		return this._modules.keys();
+	}
+
 	listen(event, module, key) {
 		const listener = this._call.bind(this, module, key);
 		this._modules.get(module).listeners.push([event, listener]);
