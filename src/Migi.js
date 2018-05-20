@@ -1,46 +1,50 @@
-import { Client } from 'discord.js';
-import { readFileSync, existsSync, writeFileSync } from 'fs';
-import mkdirp from 'mkdirp';
-import { join, dirname } from 'path';
-import json5 from 'json5';
-import merge from 'deepmerge';
+import { Client } from 'discord.js'
+import { readFileSync, existsSync, writeFileSync } from 'fs'
+import mkdirp from 'mkdirp'
+import { join, dirname } from 'path'
+import json5 from 'json5'
+import merge from 'deepmerge'
 
-export const hooks = Symbol('hooks');
+export const hooks = Symbol('hooks')
 
 export function initHooks(target) {
-	if (!(hooks in target)) target[hooks] = [];
+	if (!(hooks in target)) target[hooks] = []
 }
 
 export default class Migi extends Client {
 	constructor({ discordjs, root = process.cwd() } = {}) {
-		super(discordjs);
-		this.root = root;
-		this._modules = new Map();
-		this.on('message', message => this._onMessage(message));
+		super(discordjs)
+		this.root = root
+		this._modules = new Map()
+		this.on('message', message => this._onMessage(message))
 		this.settings = this.loadConfig('global', {
 			prefix: '/'
-		});
+		})
 	}
 
 	loadModule(Module) {
-		const module = new Module(this);
+		const module = new Module(this)
 		this._modules.set(module, {
 			listeners: [],
 			commands: []
-		});
+		})
 
-		for (const hook of module[hooks]) hook(this, module);
+		for (const hook of module[hooks]) hook(this, module)
 
-		return module;
+		return module
 	}
 
 	unloadModule(module) {
-		const { listeners } = this._modules.get(module);
+		const { listeners } = this._modules.get(module)
 		for (const [event, listener] of listeners) {
-			if (event === 'unload') listener();
-			else this.removeListener(event, listener);
+			if (event === 'unload') listener()
+			else this.removeListener(event, listener)
 		}
-		this._modules.remove(module);
+		this._modules.remove(module)
+	}
+
+	get modules() {
+		return this._modules.keys()
 	}
 
 	get modules() {
@@ -48,20 +52,20 @@ export default class Migi extends Client {
 	}
 
 	listen(event, module, key) {
-		const listener = this._call.bind(this, module, key);
-		this._modules.get(module).listeners.push([event, listener]);
-		this.on(event, listener);
+		const listener = this._call.bind(this, module, key)
+		this._modules.get(module).listeners.push([event, listener])
+		this.on(event, listener)
 	}
 
 	command(regex, module, key, options) {
-		this._modules.get(module).commands.push([regex, key, options]);
+		this._modules.get(module).commands.push([regex, key, options])
 	}
 
 	loadConfig(name, defaultConfig) {
-		const path = join(this.root, 'settings', `${name}.json5`);
-		mkdirp.sync(dirname(path));
+		const path = join(this.root, 'settings', `${name}.json5`)
+		mkdirp.sync(dirname(path))
 		if (existsSync(path))
-			return merge(defaultConfig, json5.parse(readFileSync(path, 'utf-8')));
+			return merge(defaultConfig, json5.parse(readFileSync(path, 'utf-8')))
 		else {
 			const config = json5
 				.stringify(defaultConfig, {
@@ -69,33 +73,33 @@ export default class Migi extends Client {
 				})
 				.split(`\n`)
 				.map((line, i, { length }) => {
-					if (i > 0 && i != length - 1) return `//${line}`;
-					else return line;
+					if (i > 0 && i != length - 1) return `//${line}`
+					else return line
 				})
-				.join('\n');
-			writeFileSync(path, config, 'utf-8');
-			return defaultConfig;
+				.join('\n')
+			writeFileSync(path, config, 'utf-8')
+			return defaultConfig
 		}
 	}
 
 	_onMessage(message) {
-		const { content } = message;
+		const { content } = message
 
 		for (const [module, { commands }] of this._modules.entries()) {
 			for (const [regex, key, { prefix = true }] of commands) {
-				if (prefix && !content.startsWith(this.settings.prefix)) continue;
+				if (prefix && !content.startsWith(this.settings.prefix)) continue
 				const result = regex.exec(
 					prefix ? content.slice(this.settings.prefix.length) : content
-				);
+				)
 
-				if (result) this._call(module, key, message, ...result.slice(1));
+				if (result) this._call(module, key, message, ...result.slice(1))
 
-				regex.lastIndex = 0;
+				regex.lastIndex = 0
 			}
 		}
 	}
 
 	_call(module, key, ...args) {
-		module[key](...args);
+		module[key](...args)
 	}
 }
