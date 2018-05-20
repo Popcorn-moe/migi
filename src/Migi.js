@@ -12,7 +12,7 @@ export function initHooks(target) {
 }
 
 export default class Migi extends Client {
-	constructor({ discordjs, root = process.cwd(), settings } = {}) {
+	constructor({ discordjs, root = process.cwd(), settings = {} } = {}) {
 		super(discordjs)
 		this.root = root
 		this._modules = new Map()
@@ -54,13 +54,25 @@ export default class Migi extends Client {
 	}
 
 	listen(event, module, key) {
-		const listener = this._call.bind(this, module, key)
-		this._modules.get(module).listeners.push([event, listener])
-		this.on(event, listener)
+		if (this._modules.has(module)) {
+			const listener = this._call.bind(this, module, key)
+			this._modules.get(module).listeners.push([event, listener])
+			this.on(event, listener)
+		} else {
+			initHooks(module)
+			module[hooks].push((migi, that) => migi.listen(event, that, key))
+		}
 	}
 
-	command(regex, module, key, options) {
-		this._modules.get(module).commands.push([regex, key, options])
+	command(regex, module, key, options = {}) {
+		if (this._modules.has(module)) {
+			this._modules.get(module).commands.push([regex, key, options])
+		} else {
+			initHooks(module)
+			module[hooks].push((migi, that) =>
+				migi.command(regex, that, key, options)
+			)
+		}
 	}
 
 	loadConfig(name, defaultConfig) {
