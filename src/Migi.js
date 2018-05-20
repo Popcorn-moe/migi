@@ -31,7 +31,7 @@ export default class Migi extends Client {
 
 		for (const hook of module[hooks]) hook(this, module);
 
-		return () => this.unloadModule(module);
+		return module;
 	}
 
 	unloadModule(module) {
