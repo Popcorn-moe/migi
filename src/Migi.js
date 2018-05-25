@@ -138,7 +138,7 @@ export default class Migi extends Client {
 				if (prefix && !content.startsWith(this.settings.prefix)) continue
 				const [match, ...args] = regex.exec(
 					prefix ? content.slice(this.settings.prefix.length) : content
-				)
+				) || []
 
 				if (match) {
 					try {
