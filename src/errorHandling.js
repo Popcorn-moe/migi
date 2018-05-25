@@ -1,5 +1,4 @@
 import { red, white, yellow, black } from 'chalk'
-import umaru from 'umaru-chan' //don't ask
 import { Migi, GuildChannel } from '.'
 
 /**
@@ -40,7 +39,9 @@ export function sendDiscordError(channel, message, description) {
 	const embed = new RichEmbed()
 		.setColor(errorEmbedColor)
 		.setTitle(message)
-		.setImage(umaru(errorEmbedImages))
+		.setImage(
+			errorEmbedImages[Math.floor(Math.random() * errorEmbedImages.length)]
+		)
 		.setFooter(errorFooter, errorIcon)
 		.setTimestamp()
 
@@ -70,16 +71,4 @@ export function warn(migi, message, ...args) {
 
 	console.warn(yellow.bold('Warning: ') + yellow(message))
 	console.warn(yellow.italic.bold(migi.settings.errorFooter))
-}
-
-//Error handler
-export function errHandle(fn, onErr) {
-	return (...args) => {
-		try {
-			const ret = fn(...args)
-			return ret && ret.catch ? ret.catch(e => onErr(e, ...args)) : ret
-		} catch (e) {
-			return onErr(e, ...args)
-		}
-	}
 }
