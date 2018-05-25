@@ -1,6 +1,5 @@
 export * from 'discord.js'
 export * from './decorators'
-import Migi from './Migi'
-export * from './errorHandling'
-export { Migi as Client, Migi }
+import Migi, { sendDiscordError } from './Migi'
+export { Migi as Client, Migi, sendDiscordError }
 export default Migi

@@ -1,15 +1,43 @@
-import { Client } from 'discord.js'
+import { Client, RichEmbed } from 'discord.js'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import mkdirp from 'mkdirp'
 import { join, dirname } from 'path'
 import json5 from 'json5'
 import merge from 'deepmerge'
-import { error } from './errorHandling'
 
 export const hooks = Symbol('hooks')
 
 export function initHooks(target) {
 	if (!(hooks in target)) target[hooks] = []
+}
+
+export function sendDiscordError(channel, message, description) {
+	const migi = channel.client
+	const {
+		errorFooter,
+		errorEmbedDeleteTimeout,
+		errorEmbedColor,
+		errorEmbedImages,
+		errorIcon
+	} = migi.settings
+
+	const embed = new RichEmbed()
+		.setColor(errorEmbedColor)
+		.setTitle(message)
+		.setImage(
+			errorEmbedImages[Math.floor(Math.random() * errorEmbedImages.length)]
+		)
+		.setFooter(errorFooter, errorIcon)
+		.setTimestamp()
+
+	description && embed.setDescription(description)
+
+	return channel
+		.send(embed)
+		.then(
+			message =>
+				errorEmbedDeleteTimeout && message.delete(errorEmbedDeleteTimeout)
+		)
 }
 
 export default class Migi extends Client {
@@ -61,7 +89,7 @@ export default class Migi extends Client {
 
 	listen(event, module, key) {
 		if (this._modules.has(module)) {
-			const listener = this._call.bind(this, module, key, false)
+			const listener = (...args) => module[key](...args)
 			this._modules.get(module).listeners.push([event, listener])
 			this.on(event, listener)
 		} else {
@@ -102,44 +130,26 @@ export default class Migi extends Client {
 		}
 	}
 
-	_onMessage(message) {
+	async _onMessage(message) {
 		const { content } = message
 
 		for (const [module, { commands }] of this._modules.entries()) {
 			for (const [regex, key, { prefix = true }] of commands) {
 				if (prefix && !content.startsWith(this.settings.prefix)) continue
-				const result = regex.exec(
+				const [match, ...args] = regex.exec(
 					prefix ? content.slice(this.settings.prefix.length) : content
 				)
 
-				if (result) this._call(module, key, true, message, ...result.slice(1))
+				if (match) {
+					try {
+						await module[key](message, ...args)
+					} catch (err) {
+						sendDiscordError(message.channel, `Error while dispatching command "${match}" to module ${module.constructor.name}`, err)
+						throw err;
+					}
+				}
 
 				regex.lastIndex = 0
-			}
-		}
-	}
-
-	async _call(module, key, command, ...args) {
-		try {
-			await module[key](...args) //catch normal throw and promise rejection
-		} catch (err) {
-			if (command) {
-				const message = args[0]
-				error(
-					message,
-					err,
-					`Error while dispatching command $1 to $2`,
-					message.content,
-					`${module.constructor.name}.${key}`
-				)
-			} else {
-				error(
-					this,
-					err,
-					`Error while dispatching listener $1 to $2`,
-					message.content,
-					`${module.constructor.name}.${key}`
-				)
 			}
 		}
 	}
