@@ -9,3 +9,6 @@ export default function restrict(func) {
 		return descriptor
 	}
 }
+
+export const needPermissions = (...args) =>
+	restrict(({ member }) => member && member.hasPermission(...args))
