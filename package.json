@@ -9,6 +9,7 @@
     "README.md"
   ],
   "scripts": {
+    "start": "babel-node dev/playground.js",
     "build": "rimraf lib && babel src -d lib",
     "prepack": "npm run build",
     "format": "prettier --write \"src/**/*.js\" \"examples/**/*.js\""
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@babel/cli": "^7.0.0-beta.47",
     "@babel/core": "^7.0.0-beta.47",
+    "@babel/node": "^7.0.0-beta.47",
     "@babel/plugin-proposal-decorators": "^7.0.0-beta.47",
     "@babel/preset-env": "^7.0.0-beta.47",
     "prettier": "^1.12.1",
