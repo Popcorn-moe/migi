@@ -1,7 +1,8 @@
-import Migi, { command, on } from '../lib'
+import Migi, { command, on, restrict } from '../lib'
 
 class Ping {
 	@command(/^ping(?: (.*))?$/)
+	@restrict(({ member }) => member.roles.some(({ name }) => name == 'Admin'))
 	ping({ channel }, arg) {
 		channel.send(`Ping ${arg}!`)
 	}

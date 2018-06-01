@@ -136,16 +136,23 @@ export default class Migi extends Client {
 		for (const [module, { commands }] of this._modules.entries()) {
 			for (const [regex, key, { prefix = true }] of commands) {
 				if (prefix && !content.startsWith(this.settings.prefix)) continue
-				const [match, ...args] = regex.exec(
-					prefix ? content.slice(this.settings.prefix.length) : content
-				) || []
+				const [match, ...args] =
+					regex.exec(
+						prefix ? content.slice(this.settings.prefix.length) : content
+					) || []
 
 				if (match) {
 					try {
 						await module[key](message, ...args)
 					} catch (err) {
-						sendDiscordError(message.channel, `Error while dispatching command "${match}" to module ${module.constructor.name}`, err)
-						throw err;
+						sendDiscordError(
+							message.channel,
+							`Error while dispatching command "${match}" to module ${
+								module.constructor.name
+							}`,
+							err
+						)
+						throw err
 					}
 				}
 
