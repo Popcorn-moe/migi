@@ -11,6 +11,11 @@ export function initHooks(target) {
 	if (!(hooks in target)) target[hooks] = []
 }
 
+function toArray(elem) {
+	if (Array.isArray(elem)) return elem
+	else return [elem]
+}
+
 export function sendDiscordError(channel, message, description) {
 	const migi = channel.client
 	const {
@@ -99,6 +104,9 @@ export default class Migi extends Client {
 	}
 
 	command(regex, module, key, options = {}) {
+		if (typeof options.prefix === 'function')
+			options.prefix = options.prefix(this)
+
 		if (this._modules.has(module)) {
 			this._modules.get(module).commands.push([regex, key, options])
 		} else {
@@ -134,29 +142,32 @@ export default class Migi extends Client {
 		const { content } = message
 
 		for (const [module, { commands }] of this._modules.entries()) {
-			for (const [regex, key, { prefix = true }] of commands) {
-				if (prefix && !content.startsWith(this.settings.prefix)) continue
-				const [match, ...args] =
-					regex.exec(
-						prefix ? content.slice(this.settings.prefix.length) : content
-					) || []
+			for (const [regex, key, { prefix: cPrefix }] of commands) {
+				for (const prefix of toArray(cPrefix || this.settings.prefix)) {
+					const toMatch =
+						typeof prefix === 'function' ? prefix(message) : prefix
+					if (toMatch && !content.startsWith(toMatch)) continue
 
-				if (match) {
-					try {
-						await module[key](message, ...args)
-					} catch (err) {
-						sendDiscordError(
-							message.channel,
-							`Error while dispatching command "${match}" to module ${
-								module.constructor.name
-							}`,
-							err
-						)
-						throw err
+					const [match, ...args] =
+						regex.exec(toMatch ? content.slice(toMatch.length) : content) || []
+
+					if (match) {
+						try {
+							await module[key](message, ...args)
+						} catch (err) {
+							sendDiscordError(
+								message.channel,
+								`Error while dispatching command "${match}" to module ${
+									module.constructor.name
+								}`,
+								err
+							)
+							throw err
+						}
 					}
-				}
 
-				regex.lastIndex = 0
+					regex.lastIndex = 0
+				}
 			}
 		}
 	}
