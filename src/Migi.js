@@ -139,7 +139,7 @@ export default class Migi extends Client {
 	}
 
 	async _onMessage(message) {
-		const { content } = message
+		const { content, channel } = message
 
 		for (const [module, { commands }] of this._modules.entries()) {
 			for (const [regex, key, { prefix: cPrefix }] of commands) {
@@ -153,6 +153,7 @@ export default class Migi extends Client {
 
 					if (match) {
 						try {
+							channel.startTyping()
 							await module[key](message, ...args)
 						} catch (err) {
 							sendDiscordError(
@@ -163,6 +164,8 @@ export default class Migi extends Client {
 								err
 							)
 							throw err
+						} finally {
+							channel.stopTyping()
 						}
 					}
 
