@@ -4,4 +4,4 @@ import on from './on'
 import restrict from './restrict'
 
 export * from './restrict'
-export { command, configurable, needPermissions, on, restrict }
+export { command, configurable, on, restrict }
