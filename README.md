@@ -56,7 +56,8 @@ class Ping {
 }
 
 const migi = new Migi({
-	root: __dirname
+	root: __dirname,
+	messagesUpdate: true
 })
 
 migi.loadModule(Ping)
