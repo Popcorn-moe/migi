@@ -46,11 +46,12 @@ export function sendDiscordError(channel, message, description) {
 }
 
 export default class Migi extends Client {
-	constructor({ discordjs, root = process.cwd(), settings = {} } = {}) {
+	constructor({ discordjs, root = process.cwd(), settings = {}, messagesUpdate = false } = {}) {
 		super(discordjs)
 		this.root = root
 		this._modules = new Map()
 		this.on('message', message => this._onMessage(message))
+		if(messagesUpdate) this.on('messageUpdate', (_, newMessage) => this._onMessage(newMessage))
 		this.settings = this.loadConfig(
 			'global',
 			merge(
