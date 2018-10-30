@@ -5,12 +5,13 @@ export const LISTENER_DATA = Symbol('listener_data')
 const MIGI_DATA = Symbol('migi_data')
 
 export function getModuleData(module) {
-	return (typeof module === 'function' ? module : module.constructor)[MODULE_DATA]
+	return (typeof module === 'function' ? module : module.constructor)[
+		MODULE_DATA
+	]
 }
 
 export function isModule(instance) {
-	return !!(instance.constructor &&
-		instance.constructor[MODULE_DATA])
+	return !!(instance.constructor && instance.constructor[MODULE_DATA])
 }
 
 export function getListenerData(handler) {
@@ -61,15 +62,18 @@ export default class Migi extends Client {
 	listen(module, event, listener) {
 		if (!isModule(module) || !this.isModuleLoaded(module))
 			throw new Error('module must be a loaded module instance')
-		if (typeof event !== 'string')
-			throw new Error('event must be a string')
+		if (typeof event !== 'string') throw new Error('event must be a string')
 		if (typeof listener !== 'function')
 			throw new Error('listener must be a function')
 
 		// public handler data
 		listener[LISTENER_DATA] = {
-			get module() { return module },
-			get event() { return event }
+			get module() {
+				return module
+			},
+			get event() {
+				return event
+			}
 		}
 
 		this.removeListener
@@ -80,8 +84,7 @@ export default class Migi extends Client {
 	}
 
 	isModuleLoaded(module) {
-		if (!isModule(module))
-			throw new Error('module must be a module instance')
+		if (!isModule(module)) throw new Error('module must be a module instance')
 
 		return !!getModuleData(module).instance
 	}
