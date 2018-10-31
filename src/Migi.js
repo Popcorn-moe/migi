@@ -25,9 +25,10 @@ export default class Migi extends Client {
 		const migi = this
 
 		// init module data
-		ModuleConstructor[MIGI_DATA] = {
+		const data = {
 			_listeners: [],
 			_instance: null,
+			_loading: true,
 			get listeners() {
 				return Object.freeze(this._listeners.slice())
 			},
@@ -44,9 +45,11 @@ export default class Migi extends Client {
 				return migi
 			}
 		}
+		ModuleConstructor[MIGI_DATA] = data
 
 		const module = new ModuleConstructor(this)
-		getMigiData(ModuleConstructor)._instance = module
+		data._loading = false
+		data._instance = module
 
 		// add module
 		this._modules.push(module)
@@ -59,30 +62,36 @@ export default class Migi extends Client {
 		if (!isModule(module) || !this.isModuleLoaded(module))
 			throw new Error('instance must a loaded module instance')
 
-		const migiData = getMigiData(module.constructor)
-		migiData._instance = null // set unloaded
+		const data = module.constructor[MIGI_DATA]
+		data._instance = null // set unloaded
 
 		// remove listeners
-		migiData._listeners.forEach(listener => {
-			const { event } = getMigiData(listener)
+		data._listeners.forEach(listener => {
+			const { event, _rawHandler } = listener[MIGI_DATA]
 			this.emit('listenerRemove', module, event, listener)
-			this.removeListener(event, listener)
+			this.removeListener(event, _rawHandler)
 		})
 
 		// remove module
 		this.emit('moduleUnload', module)
-		this._modules.remove(module)
+		this._modules.splice(this._modules.indexOf(module), 1)
 	}
 
 	listen(module, event, listener) {
-		if (!isModule(module) || !this.isModuleLoaded(module))
-			throw new Error('module must be a loaded module instance')
+		if (!isModule(module))
+			throw new Error('module must be a module instance')
 		if (typeof event !== 'string') throw new Error('event must be a string')
 		if (typeof listener !== 'function')
 			throw new Error('listener must be a function')
 
+		// allow adding in constructor
+		const data = module.constructor[MIGI_DATA]
+		if (!data._loading && !data._instance)
+			throw new Error('module must be a currently loading or loaded module instance')
+
 		// init listener data
-		listener[MIGI_DATA] = {
+		const listData = {
+			_rawHandler: (...args) => listener.apply(module, args), // fix `this` arg
 			get module() {
 				return module
 			},
@@ -93,16 +102,17 @@ export default class Migi extends Client {
 				return listener
 			}
 		}
+		listener[MIGI_DATA] = listData
 
 		// add listener
-		getModuleData(module.constructor)._listeners.push(listener)
+		data._listeners.push(listener)
 		this.emit('listenerAdd', module, event, listener)
-		this.on(event, listener)
+		this.on(event, listData._rawHandler)
 	}
 
 	isModuleLoaded(module) {
 		if (!isModule(module)) throw new Error('module must be a module instance')
 
-		return !!getModuleData(module.constructor).instance
+		return !!module.constructor[MIGI_DATA].instance
 	}
 }
